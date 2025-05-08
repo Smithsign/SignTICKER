@@ -2,30 +2,200 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sticker Maker</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Comic Neue', cursive;
+      background: linear-gradient(to bottom right, #fff4e6, #ffe0b2);
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #ff7a00;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    .upload-area {
+      border: 3px dashed #ff7a00;
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+      background-color: white;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: background 0.3s ease;
+    }
+
+    .upload-area.dragover {
+      background: #fff3e0;
+    }
+
+    #upload {
+      display: none;
+    }
+
+    #gallery {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    .sticker {
+      width: 140px;
+      height: 140px;
+      border-radius: 12px;
+      border: 3px solid #ff7a00;
+      object-fit: cover;
+    }
+
+    .buttons {
+      margin-top: 20px;
+    }
+
+    .buttons button {
+      margin: 5px;
+      padding: 10px 20px;
+      border: none;
+      background: #ff7a00;
+      color: white;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .buttons button:hover {
+      background: #e66a00;
+    }
+
+    @media screen and (max-width: 600px) {
+      .sticker {
+        width: 100px;
+        height: 100px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Sticker Maker</h1>
+  <h1>Sticker Maker</h1>
+
+  <label class="upload-area" id="drop-area">
+    <p>📁 Drag & Drop or Click to Upload</p>
     <input type="file" id="upload" accept="image/*" />
+  </label>
 
-    <label for="outlineColor">Outline Color:</label>
-    <input type="color" id="outlineColor" value="#ff7a00" />
+  <div id="gallery"></div>
 
-    <div id="canvas-area"></div>
-
-    <button id="generate" style="display:none;">Generate Sticker</button>
-    
-    <div id="gallery" class="gallery"></div>
-    
-    <div id="actions" style="display:none;">
-      <button onclick="downloadSticker()">Download Sticker</button>
-      <button onclick="shareSticker()">Share on X</button>
-    </div>
+  <div class="buttons" id="action-buttons" style="display:none;">
+    <button onclick="downloadSticker()">Download</button>
+    <button onclick="shareSticker()">Share on X</button>
   </div>
 
-  <script type="module" src="script.js"></script>
+  <script type="module">
+    import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.0.0/+esm';
+
+    const dropArea = document.getElementById('drop-area');
+    const uploadInput = document.getElementById('upload');
+    const gallery = document.getElementById('gallery');
+    const actionButtons = document.getElementById('action-buttons');
+    let selectedCanvas;
+
+    function cartoonize(img) {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < data.data.length; i += 4) {
+        data.data[i] = Math.floor(data.data[i] / 50) * 50;
+        data.data[i + 1] = Math.floor(data.data[i + 1] / 50) * 50;
+        data.data[i + 2] = Math.floor(data.data[i + 2] / 50) * 50;
+      }
+      ctx.putImageData(data, 0, 0);
+      return canvas;
+    }
+
+    function createStickers(img) {
+      gallery.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 150;
+        canvas.height = 150;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 150, 150);
+        ctx.drawImage(img, 15 + i, 15 + i, 120, 120);
+        ctx.strokeStyle = '#ff7a00';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(15 + i, 15 + i, 120, 120);
+        canvas.classList.add('sticker');
+        canvas.onclick = () => {
+          document.querySelectorAll('canvas').forEach(c => c.style.borderColor = '#ff7a00');
+          canvas.style.borderColor = '#00c853';
+          selectedCanvas = canvas;
+        };
+        if (i === 0) selectedCanvas = canvas;
+        gallery.appendChild(canvas);
+      }
+      actionButtons.style.display = 'block';
+    }
+
+    async function processImage(file) {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      await img.decode();
+      const bgRemoved = await removeBackground(img);
+      const cartooned = cartoonize(bgRemoved);
+      createStickers(cartooned);
+    }
+
+    dropArea.addEventListener('click', () => uploadInput.click());
+    dropArea.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropArea.classList.add('dragover');
+    });
+    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
+    dropArea.addEventListener('drop', e => {
+      e.preventDefault();
+      dropArea.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) {
+        processImage(e.dataTransfer.files[0]);
+      }
+    });
+    uploadInput.addEventListener('change', e => {
+      if (e.target.files[0]) {
+        processImage(e.target.files[0]);
+      }
+    });
+
+    window.downloadSticker = () => {
+      if (!selectedCanvas) return alert('Select a sticker first.');
+      const link = document.createElement('a');
+      link.download = 'sticker.png';
+      link.href = selectedCanvas.toDataURL('image/png');
+      link.click();
+    };
+
+    window.shareSticker = () => {
+      if (!selectedCanvas) return alert('Select a sticker first.');
+      selectedCanvas.toBlob(blob => {
+        const file = new File([blob], 'sticker.png', { type: 'image/png' });
+        const url = `https://twitter.com/intent/tweet?text=Check%20out%20my%20sticker!%20%23StickerMaker`;
+        window.open(url, '_blank');
+      });
+    };
+  </script>
 </body>
 </html>
