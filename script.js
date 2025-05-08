@@ -1,130 +1,202 @@
-let model;
-let uploadedImg;
-let selectedCanvas;
+// Select DOM elements
+const uploadArea = document.getElementById('uploadArea');
+const imageUpload = document.getElementById('imageUpload');
+const imagePreview = document.getElementById('imagePreview');
+const generateBtn = document.getElementById('generateBtn');
+const stickerContainer = document.getElementById('stickerContainer');
+const stickerImage = document.getElementById('stickerImage');
+const outlineColorPicker = document.getElementById('outlineColor');
+const outlineSection = document.querySelector('.outline-section');
+const downloadBtn = document.getElementById('downloadBtn');
 
-async function loadModel() {
-  model = await cocoSsd.load();
-  console.log("Model loaded.");
-}
+let uploadedImage = null;
 
-loadModel();
-
-// Handle file input change (for clicking to upload)
-document.getElementById("upload").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function (event) {
-    const img = new Image();
-    img.src = event.target.result;
-    img.onload = () => {
-      uploadedImg = img;
-      document.getElementById("canvas-area").innerHTML = "";
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
-      document.getElementById("canvas-area").appendChild(canvas);
-      generateStickers();
-    };
-  };
-  reader.readAsDataURL(file);
+// Helper function to trigger file input
+uploadArea.addEventListener('click', () => {
+  imageUpload.click();
 });
 
-// Handle drag-and-drop events
-const uploadArea = document.getElementById('upload-area');
-
+// Drag and Drop
 uploadArea.addEventListener('dragover', (e) => {
   e.preventDefault();
-  uploadArea.style.backgroundColor = "#ffb84d";
+  uploadArea.style.background = '#fff4';
 });
-
 uploadArea.addEventListener('dragleave', () => {
-  uploadArea.style.backgroundColor = "#fff7e6";
+  uploadArea.style.background = 'transparent';
 });
-
 uploadArea.addEventListener('drop', (e) => {
   e.preventDefault();
-  uploadArea.style.backgroundColor = "#fff7e6";
-  const file = e.dataTransfer.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function (event) {
-    const img = new Image();
-    img.src = event.target.result;
-    img.onload = () => {
-      uploadedImg = img;
-      document.getElementById("canvas-area").innerHTML = "";
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
-      document.getElementById("canvas-area").appendChild(canvas);
-      generateStickers();
-    };
-  };
-  reader.readAsDataURL(file);
+  uploadArea.style.background = 'transparent';
+  if (e.dataTransfer.files.length > 0) {
+    loadImage(e.dataTransfer.files[0]);
+  }
 });
 
-async function generateStickers() {
-  const canvas = document.querySelector("canvas");
-  const ctx = canvas.getContext("2d");
+// File input change
+imageUpload.addEventListener('change', () => {
+  if (imageUpload.files.length > 0) {
+    loadImage(imageUpload.files[0]);
+  }
+});
 
-  const predictions = await model.detect(canvas);
-  const mainObject = predictions[0]; // Pick the most confident one
-  if (!mainObject) return alert("No subject detected.");
-
-  const {bbox} = mainObject;
-  const [x, y, width, height] = bbox;
-
-  const gallery = document.getElementById("gallery");
-  gallery.innerHTML = "";
-
-  for (let i = 0; i < 5; i++) {
-    const stickerCanvas = document.createElement("canvas");
-    stickerCanvas.width = 300;
-    stickerCanvas.height = 300;
-    const sctx = stickerCanvas.getContext("2d");
-
-    // Apply some transformations like rotation for varied facial expressions
-    sctx.translate(150, 150);
-    const angle = (i - 2) * 0.1;
-    sctx.rotate(angle);
-    sctx.translate(-150, -150);
-
-    sctx.drawImage(canvas, x, y, width, height, 50 + i * 5, 50 + i * 3, 200, 200);
-    sctx.setTransform(1, 0, 0, 1, 0, 0);
-
-    stickerCanvas.onclick = () => {
-      document.querySelectorAll("canvas").forEach(c => c.style.border = "2px solid #ff7a00");
-      stickerCanvas.style.border = "4px solid #00c853";
-      selectedCanvas = stickerCanvas;
-    };
-
-    gallery.appendChild(stickerCanvas);
+// Load image and show preview
+function loadImage(file) {
+  if (!file.type.startsWith('image/')) {
+    alert('Please select a valid image file.');
+    return;
   }
 
-  document.getElementById("actions").style.display = "block";
+  const reader = new FileReader();
+  reader.onload = () => {
+    imagePreview.src = reader.result;
+    imagePreview.style.display = 'block';
+    uploadedImage = new Image();
+    uploadedImage.src = reader.result;
+    // Enable generate button
+    generateBtn.disabled = false;
+    // Reset previous sticker
+    document.getElementById('stickerContainer').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
 }
 
-function downloadSticker() {
-  if (!selectedCanvas) return alert("Select a sticker first.");
-  const format = prompt("Download format: JPEG or PNG?").toLowerCase();
-  const link = document.createElement("a");
-  link.download = `sticker.${format === "jpeg" ? "jpg" : "png"}`;
-  link.href = selectedCanvas.toDataURL(`image/${format === "jpeg" ? "jpeg" : "png"}`);
-  link.click();
+// Generate sticker button click
+document.getElementById('generateBtn').addEventListener('click', () => {
+  if (!uploadedImage) {
+    alert('Please upload an image first.');
+    return;
+  }
+  processImage();
+});
+
+// Main processing function
+async function processImage() {
+  generateBtn.disabled = true;
+  generateBtn.textContent = 'Processing...';
+
+  // Step 1: Remove background (simulate here)
+  const bgRemovedCanvas = await removeBackground(imagePreview);
+
+  // Step 2: Cartoonize
+  const cartoonCanvas = await cartoonizeImage(bgRemovedCanvas);
+
+  // Step 3: Add outline
+  const outlinedCanvas = addOutline(cartoonCanvas, outlineColorPicker.value);
+
+  const dataURL = outlinedCanvas.toDataURL('image/png');
+
+  // Show preview
+  stickerImage.src = dataURL;
+  document.getElementById('stickerContainer').style.display = 'block';
+
+  // Set download
+  downloadBtn.onclick = () => {
+    const link = document.createElement('a');
+    link.href = dataURL;
+    link.download = 'sticker.png';
+    link.click();
+  };
+
+  // Show outline control
+  outlineSection.style.display = 'flex';
+
+  // Reset button
+  generateBtn.disabled = false;
+  generateBtn.innerText = 'Generate Sticker';
 }
 
-function shareSticker() {
-  if (!selectedCanvas) return alert("Select a sticker first.");
-  selectedCanvas.toBlob(blob => {
-    const file = new File([blob], "sticker.png", {type: "image/png"});
-    const url = `https://twitter.com/intent/tweet?text=Check%20out%20my%20sticker!%20%23StickerMaker`;
-    window.open(url, "_blank");
+// Placeholder background removal
+async function removeBackground(image) {
+  // For production, use remove.bg API or similar
+  // Here, just copy the image as-is
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  await new Promise((resolve) => {
+    if (image.complete) {
+      resolve();
+    } else {
+      image.onload = () => resolve();
+    }
   });
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  ctx.drawImage(image, 0, 0);
+  return canvas;
 }
+
+// Cartoonize: simple posterize effect
+async function cartoonizeImage(sourceCanvas) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = sourceCanvas.width;
+  canvas.height = sourceCanvas.height;
+  ctx.drawImage(sourceCanvas, 0, 0);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  const levels = 4;
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = Math.floor(data[i] / (256 / levels)) * (256 / levels); // R
+    data[i + 1] = Math.floor(data[i + 1] / (256 / levels)) * (256 / levels); // G
+    data[i + 2] = Math.floor(data[i + 2] / (256 / levels)) * (256 / levels); // B
+  }
+  ctx.putImageData(imageData, 0, 0);
+
+  // Optional: add edge detection for better effect
+  return canvas;
+}
+
+// Add outline with color
+function addOutline(canvas, color) {
+  const outlineSize = 8;
+  const width = canvas.width + outlineSize * 2;
+  const height = canvas.height + outlineSize * 2;
+
+  const outCanvas = document.createElement('canvas');
+  const ctx = outCanvas.getContext('2d');
+  outCanvas.width = width;
+  outCanvas.height = height;
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = outlineSize;
+  ctx.drawImage(canvas, outlineSize, outlineSize);
+  ctx.restore();
+
+  // Draw border rectangle for outline
+  ctx.strokeStyle = color;
+  ctx.lineWidth = outlineSize;
+  ctx.strokeRect(
+    outlineSize / 2,
+    outlineSize / 2,
+    canvas.width + outlineSize,
+    canvas.height + outlineSize
+  );
+
+  return outCanvas;
+}
+
+// Change outline color dynamically
+document.getElementById('outlineColor').addEventListener('input', () => {
+  if (stickerImage.src) {
+    const img = new Image();
+    img.src = stickerImage.src;
+    img.onload = () => {
+      const outlinedCanvas = addOutline(
+        (function () {
+          const c = document.createElement('canvas');
+          c.width = img.width;
+          c.height = img.height;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          return c;
+        })(),
+        document.getElementById('outlineColor').value
+      );
+      stickerImage.src = outlinedCanvas.toDataURL('image/png');
+    };
+  }
+});
