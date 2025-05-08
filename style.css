@@ -1,5 +1,5 @@
 body {
-  font-family: 'Comic Sans MS', cursive, sans-serif;
+  font-family: Arial, sans-serif;
   background: #fff4e6;
   margin: 0;
   padding: 20px;
@@ -18,13 +18,24 @@ body {
 
 h1 {
   color: #ff7a00;
-  font-size: 2.5em;
 }
 
-input[type="file"],
-input[type="color"] {
+#upload-area {
   margin-top: 20px;
-  font-size: 1em;
+  padding: 20px;
+  border: 2px dashed #ff7a00;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+#upload-area p {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #ff7a00;
+}
+
+input[type="file"] {
+  display: none;
 }
 
 button {
@@ -36,7 +47,6 @@ button {
   font-size: 16px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.3s ease;
 }
 
 button:hover {
@@ -52,8 +62,14 @@ button:hover {
 }
 
 canvas {
-  border: 2px dashed #ff7a00;
-  border-radius: 12px;
+  border: 2px solid #ff7a00;
+  border-radius: 10px;
   max-width: 100%;
   height: auto;
+}
+
+#sticker-preview {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
 }
