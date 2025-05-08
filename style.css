@@ -1,4 +1,4 @@
-/* Reset and base styles */
+/* Reset & base styles */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -22,11 +22,9 @@ header {
   margin-bottom: 20px;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
-
 h1 {
   font-size: 2em;
 }
-
 main {
   width: 100%;
   max-width: 900px;
@@ -43,7 +41,6 @@ main {
   text-align: center;
   box-shadow: 0 8px 16px rgba(0,0,0,0.2);
 }
-
 .upload-area {
   border: 3px dashed #fff3;
   border-radius: 15px;
@@ -92,13 +89,12 @@ button:hover {
   border-radius: 15px;
   text-align: center;
   box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-  transition: background 0.3s;
 }
 #stickerCanvas {
   max-width: 100%;
   max-height: 400px;
   border-radius: 20px;
-  border: 8px solid transparent; /* outline color controlled via canvas for better control */
+  border: 8px solid transparent;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
@@ -115,7 +111,7 @@ button:hover {
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
-/* Responsive */
+/* Responsive styles */
 @media(max-width: 600px) {
   body {
     padding: 10px;
