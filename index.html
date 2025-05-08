@@ -3,15 +3,18 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Sticker Maker</title>
-<!-- Link to external CSS -->
-<link rel="stylesheet" href="style.css" />
-<!-- Optional: Google Fonts for a professional look -->
+<title>Ghibli Style Sticker Maker</title>
+<!-- External CSS -->
+<link rel="stylesheet" href="styles.css" />
+<!-- Google Fonts for a playful, professional style -->
 <link href="https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap" rel="stylesheet" />
+<!-- TensorFlow.js and BodyPix -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
 </head>
 <body>
 <header>
-  <h1>🎨 Sticker Maker</h1>
+  <h1>🎨 Ghibli Style Sticker Maker</h1>
 </header>
 <main>
   <section class="upload-section">
@@ -34,12 +37,13 @@
 
   <section class="sticker-preview" id="stickerContainer" style="display:none;">
     <h2>Sticker Preview</h2>
-    <img id="stickerImage" alt="Your Sticker" />
-    <button id="downloadBtn">Download Sticker</button>
+    <canvas id="stickerCanvas"></canvas>
+    <div style="margin-top:10px;">
+      <button id="downloadBtn">Download Sticker</button>
+    </div>
   </section>
 </main>
 
-<!-- Scripts -->
 <script src="script.js"></script>
 </body>
 </html>
