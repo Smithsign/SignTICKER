@@ -5,14 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sticker Maker</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 </head>
 <body>
   <div class="container">
     <h1>Sticker Maker</h1>
     <input type="file" id="upload" accept="image/*" />
+
+    <label for="outlineColor">Outline Color:</label>
+    <input type="color" id="outlineColor" value="#ff7a00" />
+
     <div id="canvas-area"></div>
+
     <button id="generate" style="display:none;">Generate Sticker</button>
     
     <div id="gallery" class="gallery"></div>
@@ -23,6 +26,6 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
