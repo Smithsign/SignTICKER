@@ -1,31 +1,26 @@
-// Variables
+// Variables and references
 let model;
 let uploadedImage = null;
 const imagePreview = document.getElementById('imagePreview');
 const generateBtn = document.getElementById('generateBtn');
 const uploadArea = document.getElementById('uploadArea');
 const imageUpload = document.getElementById('imageUpload');
-const stickerContainer = document.getElementById('stickerContainer');
 const stickerCanvas = document.getElementById('stickerCanvas');
 const outlineColorPicker = document.getElementById('outlineColor');
 const outlineSection = document.querySelector('.outline-section');
 const downloadBtn = document.getElementById('downloadBtn');
 
+let currentObjectCanvas = null; // store processed object for outline
+let currentObjectImage = null; // store image for outline processing
+
 // Load BodyPix model
 async function loadBodyPix() {
-  model = await bodyPix.load({
-    architecture: 'MobileNetV1',
-    outputStride: 16,
-    multiplier: 0.75,
-    quantBytes: 2
-  });
+  model = await bodyPix.load({ architecture: 'MobileNetV1', outputStride: 16, multiplier: 0.75 });
 }
 loadBodyPix();
 
-// Handle upload click or drag
-uploadArea.addEventListener('click', () => {
-  imageUpload.click();
-});
+// File upload and drag/drop handlers
+uploadArea.addEventListener('click', () => { imageUpload.click(); });
 uploadArea.addEventListener('dragover', e => {
   e.preventDefault();
   uploadArea.style.background = '#fff4';
@@ -55,88 +50,83 @@ function loadImage(file) {
     uploadedImage.src = reader.result;
     // Enable generate button
     generateBtn.disabled = false;
-    // Reset previous sticker
     document.getElementById('stickerContainer').style.display = 'none';
   };
   reader.readAsDataURL(file);
 }
 
-// Generate button click
+// Generate sticker
 document.getElementById('generateBtn').addEventListener('click', async () => {
   if (!uploadedImage || !model) {
-    alert('Please upload an image and wait for model to load.');
+    alert('Please upload an image and wait for the model to load.');
     return;
   }
   generateBtn.disabled = true;
   generateBtn.innerText = 'Processing...';
-  await processImage();
+
+  // 1. Remove background
+  const maskCanvas = await createMaskCanvas(uploadedImage);
+  const bgRemovedCanvas = await applyMaskToImage(uploadedImage, maskCanvas);
+
+  // 2. Generate outline of object
+  currentObjectCanvas = await generateObjectOutline(bgRemovedCanvas);
+  currentObjectImage = new Image();
+  currentObjectImage.src = currentObjectCanvas.toDataURL();
+
+  // 3. Apply Ghibli style filter
+  const ghibliCanvas = await ghibliifyCanvas(currentObjectCanvas);
+
+  // 4. Add outline of object
+  const finalCanvas = addOutline(ghibliCanvas, outlineColorPicker.value);
+
+  // Draw final on main canvas
+  drawToMainCanvas(finalCanvas);
+
+  // Show outline control
+  outlineSection.style.display = 'flex';
+
+  // Reset button
   generateBtn.innerText = 'Generate Sticker';
   generateBtn.disabled = false;
 });
 
-// Process image
-async function processImage() {
-  // 1. Remove background using BodyPix
-  const maskCanvas = await createMaskCanvas(uploadedImage);
-  const bgRemovedCanvas = await applyMaskToImage(uploadedImage, maskCanvas);
-
-  // 2. Cartoonize for Ghibli style
-  const cartoonCanvas = await ghibliifyCanvas(bgRemovedCanvas);
-
-  // 3. Add outline
-  const outlinedCanvas = addOutline(cartoonCanvas, outlineColorPicker.value);
-
-  // Draw on the main canvas
-  drawToMainCanvas(outlinedCanvas);
-}
-
-// Create mask for person/object detection
+// Create mask for object detection
 async function createMaskCanvas(image) {
   const segmentation = await model.segmentPerson(image, {
     flipHorizontal: false,
     internalResolution: 'medium',
     segmentationThreshold: 0.7
   });
-  // Create mask canvas
   const maskCanvas = document.createElement('canvas');
   maskCanvas.width = image.naturalWidth;
   maskCanvas.height = image.naturalHeight;
   const ctx = maskCanvas.getContext('2d');
 
-  // Draw mask
+  // Create mask image data
   const imageData = ctx.createImageData(maskCanvas.width, maskCanvas.height);
   for (let i = 0; i < segmentation.data.length; i++) {
     const offset = i * 4;
     if (segmentation.data[i] === 1) {
-      // Keep pixel
-      imageData.data[offset] = 0; // dummy, will overlay actual
-      imageData.data[offset + 1] = 0;
-      imageData.data[offset + 2] = 0;
       imageData.data[offset + 3] = 255; // opaque
     } else {
-      // Transparent pixel
-      imageData.data[offset + 3] = 0;
+      imageData.data[offset + 3] = 0; // transparent
     }
   }
   ctx.putImageData(imageData, 0, 0);
   return maskCanvas;
 }
 
-// Apply mask to original image to remove background
+// Apply mask to remove background
 async function applyMaskToImage(image, maskCanvas) {
   const canvas = document.createElement('canvas');
   canvas.width = image.naturalWidth;
   canvas.height = image.naturalHeight;
   const ctx = canvas.getContext('2d');
 
-  // Draw original image
   ctx.drawImage(image, 0, 0);
-
-  // Get image data
   const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const maskData = maskCanvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
 
-  // Apply mask: set transparent where mask alpha is 0
   for (let i = 0; i < imgData.data.length; i += 4) {
     if (maskData.data[i + 3] === 0) {
       imgData.data[i + 3] = 0; // transparent
@@ -146,35 +136,83 @@ async function applyMaskToImage(image, maskCanvas) {
   return canvas;
 }
 
-// Ghibli-style effect
+// Generate outline of object
+async function generateObjectOutline(canvas) {
+  const ctx = canvas.getContext('2d');
+
+  // Get image data
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  // Convert to grayscale
+  const grayData = new Uint8ClampedArray(canvas.width * canvas.height);
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    const r = imageData.data[i];
+    const g = imageData.data[i + 1];
+    const b = imageData.data[i + 2];
+    grayData[i / 4] = 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+
+  // Simple edge detection (Sobel)
+  const edgeData = new Uint8ClampedArray(canvas.width * canvas.height);
+  for (let y = 1; y < canvas.height - 1; y++) {
+    for (let x = 1; x < canvas.width - 1; x++) {
+      const idx = y * canvas.width + x;
+      const gx =
+        -grayData[idx - canvas.width - 1] - 2 * grayData[idx - 1] - grayData[idx + canvas.width - 1]
+        + grayData[idx - canvas.width + 1] + 2 * grayData[idx + 1] + grayData[idx + canvas.width + 1];
+      const gy =
+        -grayData[idx - canvas.width - 1] - 2 * grayData[idx - canvas.width] - grayData[idx - canvas.width + 1]
+        + grayData[idx + canvas.width - 1] + 2 * grayData[idx + canvas.width] + grayData[idx + canvas.width + 1];
+      const g = Math.sqrt(gx * gx + gy * gy);
+      edgeData[idx] = g > 20 ? 255 : 0; // threshold
+    }
+  }
+
+  // Create outline image
+  const outlineCanvas = document.createElement('canvas');
+  outlineCanvas.width = canvas.width;
+  outlineCanvas.height = canvas.height;
+  const outlineCtx = outlineCanvas.getContext('2d');
+
+  const outlineImageData = outlineCtx.createImageData(canvas.width, canvas.height);
+  for (let i = 0; i < edgeData.length; i++) {
+    const v = edgeData[i];
+    outlineImageData.data[i * 4] = 0; // R
+    outlineImageData.data[i * 4 + 1] = 0; // G
+    outlineImageData.data[i * 4 + 2] = 0; // B
+    outlineImageData.data[i * 4 + 3] = v; // alpha
+  }
+  outlineCtx.putImageData(outlineImageData, 0, 0);
+  return outlineCanvas;
+}
+
+// Apply Ghibli-like style
 async function ghibliifyCanvas(canvas) {
   const ctx = canvas.getContext('2d');
 
-  // Simple posterize effect
+  // Posterize effect
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
   const levels = 4;
   for (let i = 0; i < data.length; i += 4) {
-    data[i] = Math.floor(data[i] / (256 / levels)) * (256 / levels); // R
-    data[i + 1] = Math.floor(data[i + 1] / (256 / levels)) * (256 / levels); // G
-    data[i + 2] = Math.floor(data[i + 2] / (256 / levels)) * (256 / levels); // B
+    data[i] = Math.floor(data[i] / (256 / levels)) * (256 / levels);
+    data[i + 1] = Math.floor(data[i + 1] / (256 / levels)) * (256 / levels);
+    data[i + 2] = Math.floor(data[i + 2] / (256 / levels)) * (256 / levels);
   }
   ctx.putImageData(imageData, 0, 0);
 
-  // Optional: add a slight blur for smoother look
+  // Slight blur for smoothness
   ctx.filter = 'blur(0.5px)';
   ctx.drawImage(canvas, 0, 0);
   ctx.filter = 'none';
 
-  // Optional: add edge detection (for outline effect)
-  // For simplicity, skip complex edge detection here
-
+  // Optional: you can add more filters here for style
   return canvas;
 }
 
-// Add outline around the object
+// Add outline around object
 function addOutline(canvas, color) {
-  const outlineSize = 10; // thicker for better effect
+  const outlineSize = 12; // thicker outline
   const width = canvas.width + outlineSize * 2;
   const height = canvas.height + outlineSize * 2;
 
@@ -185,14 +223,14 @@ function addOutline(canvas, color) {
 
   ctx.clearRect(0, 0, width, height);
 
-  // Draw outline using shadow
+  // Draw outline with shadow
   ctx.save();
   ctx.shadowColor = color;
   ctx.shadowBlur = outlineSize;
   ctx.drawImage(canvas, outlineSize, outlineSize);
   ctx.restore();
 
-  // Draw the main image
+  // Draw the object again
   ctx.drawImage(canvas, outlineSize, outlineSize);
 
   // Draw border for solid outline
@@ -216,33 +254,18 @@ function drawToMainCanvas(canvas) {
   const ctx = stickerCanvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(canvas, 0, 0);
-  // Show the sticker section
   document.getElementById('stickerContainer').style.display = 'block';
 }
 
-// Update outline color dynamically
-document.getElementById('outlineColor').addEventListener('input', () => {
-  // Re-render the current sticker with new outline color
-  if (stickerCanvas.width && stickerCanvas.height) {
-    // Recreate the image with new outline color
-    const ctx = stickerCanvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, stickerCanvas.width, stickerCanvas.height);
-    // Re-draw with outline
-    // For simplicity, just re-draw the current image with new outline
-    // But for better results, store original images or re-process
-    // Here, we reapply outline to current image
-    // For demo, just overlay a new outline
-    // To keep it simple, re-create the outline
-    // But better to reprocess the original canvas if needed
-    // For now, do nothing (advanced implementation needed for perfect accuracy)
-    // Instead, for simplicity, just re-draw the current image with new outline
-    // as the outline is added on top
-    // So, we can just re-draw the current image with new outline
-    // But for now, skip dynamic update to keep it simple
+// Dynamic outline color update
+outlineColorPicker.addEventListener('input', () => {
+  if (stickerCanvas.width && stickerCanvas.height && currentObjectCanvas) {
+    const outlined = addOutline(ghibliifyCanvas(currentObjectCanvas), outlineColorPicker.value);
+    drawToMainCanvas(outlined);
   }
 });
 
-// Download button
+// Download
 downloadBtn.addEventListener('click', () => {
   const link = document.createElement('a');
   link.href = stickerCanvas.toDataURL('image/png');
