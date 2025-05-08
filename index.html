@@ -3,47 +3,39 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ghibli Style Sticker Maker</title>
-<!-- External CSS -->
-<link rel="stylesheet" href="style.css" />
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap" rel="stylesheet" />
-<!-- TensorFlow.js and BodyPix -->
+<title>Studio Ghibli Style Illustration</title>
+<link rel="stylesheet" href="styles.css" />
+<!-- Load TensorFlow.js -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
+<!-- Load Style Transfer Model -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/style-transfer"></script>
 </head>
 <body>
 <header>
-  <h1>🎨 Ghibli Style Sticker Maker</h1>
+  <h1>🎨 Studio Ghibli Style Illustration</h1>
 </header>
 <main>
   <section class="upload-section">
-    <h2>Upload Your Image</h2>
+    <h2>Upload Your Photo</h2>
     <div class="upload-area" id="uploadArea">
       <p>Click or Drag & Drop to Upload</p>
       <input type="file" id="imageUpload" accept="image/*" />
     </div>
-    <img id="imagePreview" alt="Uploaded Image" />
+    <img id="originalImage" alt="Original" />
   </section>
 
   <section class="actions">
-    <button id="generateBtn" disabled>Generate Sticker</button>
+    <button id="applyStyleBtn" disabled>Apply Ghibli Style</button>
   </section>
 
-  <section class="outline-section" style="display:none;">
-    <label for="outlineColor">Outline Color:</label>
-    <input type="color" id="outlineColor" value="#ff7f50" />
-  </section>
-
-  <section class="sticker-preview" id="stickerContainer" style="display:none;">
-    <h2>Sticker Preview</h2>
-    <canvas id="stickerCanvas"></canvas>
+  <section class="result-section" style="display:none;">
+    <h2>Ghibli-Style Illustration</h2>
+    <canvas id="resultCanvas"></canvas>
     <div style="margin-top:10px;">
       <button id="downloadBtn">Download Sticker</button>
     </div>
   </section>
 </main>
-
 <script src="script.js"></script>
 </body>
 </html>
