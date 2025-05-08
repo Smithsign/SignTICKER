@@ -1,68 +1,62 @@
-/* Reset & base styles */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* Basic styling for layout */
 
 body {
   font-family: 'Comic Neue', cursive, sans-serif;
-  background: linear-gradient(135deg, #FFA500, #FF8C00);
+  background: linear-gradient(135deg, #ffd700, #ffb347);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 20px;
-  color: #fff;
+  margin: 0;
+  color: #333;
 }
 
-/* Header styling */
 header {
   text-align: center;
   margin-bottom: 20px;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 h1 {
   font-size: 2em;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
 }
 main {
   width: 100%;
-  max-width: 900px;
+  max-width: 800px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  align-items: center;
 }
 
-/* Upload section styles */
+/* Upload area styles */
 .upload-section {
   background: rgba(255,255,255,0.2);
   padding: 20px;
   border-radius: 15px;
+  width: 100%;
   text-align: center;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
 }
 .upload-area {
-  border: 3px dashed #fff3;
-  border-radius: 15px;
+  border: 3px dashed #fff;
   padding: 20px;
+  border-radius: 15px;
   cursor: pointer;
-  transition: background 0.3s, border-color 0.3s;
+  transition: background 0.3s;
 }
 .upload-area:hover {
-  background: #fff4;
-  border-color: #fff;
+  background: #fff3;
 }
-#imagePreview {
+#originalImage {
   max-width: 100%;
   max-height: 300px;
   margin-top: 15px;
-  border-radius: 15px;
   display: none;
-  object-fit: contain;
+  border-radius: 15px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
-/* Buttons */
+/* Buttons styling */
 button {
   padding: 12px 24px;
   font-size: 1em;
@@ -71,53 +65,24 @@ button {
   background-color: #ff7f50;
   color: #fff;
   cursor: pointer;
-  transition: background 0.3s, transform 0.2s;
+  transition: background 0.3s;
 }
-button:hover {
+button:hover:enabled {
   background-color: #ff6333;
-  transform: scale(1.05);
 }
-#generateBtn:disabled {
-  background-color: #ccc;
+button:disabled {
+  background: #ccc;
   cursor: not-allowed;
 }
 
-/* Sticker preview */
-.sticker-preview {
-  background: rgba(255,255,255,0.2);
-  padding: 20px;
-  border-radius: 15px;
+/* Result section */
+.result-section {
+  width: 100%;
   text-align: center;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
 }
-#stickerCanvas {
+#resultCanvas {
   max-width: 100%;
-  max-height: 400px;
-  border-radius: 20px;
-  border: 8px solid transparent;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-/* Outline control styles */
-.outline-section {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 10px;
-  background: rgba(255,255,255,0.2);
-  padding: 10px 20px;
+  max-height: 600px;
   border-radius: 15px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-/* Responsive styles */
-@media(max-width: 600px) {
-  body {
-    padding: 10px;
-  }
-  button {
-    padding: 10px 20px;
-    font-size: 0.9em;
-  }
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
