@@ -1,33 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sticker Maker</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sticker Maker</title>
+<!-- Link to external CSS -->
+<link rel="stylesheet" href="styles.css" />
+<!-- Optional: Google Fonts for a professional look -->
+<link href="https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <div class="container">
-    <h1>Sticker Maker</h1>
-    <div id="upload-area" class="upload-area">
-      <input type="file" id="upload" accept="image/*" />
-      <p>Drag and drop your image here, or click to upload</p>
+<header>
+  <h1>🎨 Sticker Maker</h1>
+</header>
+<main>
+  <section class="upload-section">
+    <h2>Upload Your Image</h2>
+    <div class="upload-area" id="uploadArea">
+      <p>Click or Drag & Drop to Upload</p>
+      <input type="file" id="imageUpload" accept="image/*" />
     </div>
+    <img id="imagePreview" alt="Uploaded Image" />
+  </section>
 
-    <div id="canvas-area"></div>
-    
-    <div id="sticker-preview">
-      <div id="gallery" class="gallery"></div>
-    </div>
+  <section class="actions">
+    <button id="generateBtn" disabled>Generate Sticker</button>
+  </section>
 
-    <div id="actions" style="display:none;">
-      <button onclick="downloadSticker()">Download Sticker</button>
-      <button onclick="shareSticker()">Share on X</button>
-    </div>
-  </div>
+  <section class="outline-section" style="display:none;">
+    <label for="outlineColor">Outline Color:</label>
+    <input type="color" id="outlineColor" value="#ff7f50" />
+  </section>
 
-  <script src="script.js"></script>
+  <section class="sticker-preview" id="stickerContainer" style="display:none;">
+    <h2>Sticker Preview</h2>
+    <img id="stickerImage" alt="Your Sticker" />
+    <button id="downloadBtn">Download Sticker</button>
+  </section>
+</main>
+
+<!-- Scripts -->
+<script src="script.js"></script>
 </body>
 </html>
