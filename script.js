@@ -9,8 +9,46 @@ async function loadModel() {
 
 loadModel();
 
+// Handle file input change (for clicking to upload)
 document.getElementById("upload").addEventListener("change", (e) => {
   const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (event) {
+    const img = new Image();
+    img.src = event.target.result;
+    img.onload = () => {
+      uploadedImg = img;
+      document.getElementById("canvas-area").innerHTML = "";
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      document.getElementById("canvas-area").appendChild(canvas);
+      generateStickers();
+    };
+  };
+  reader.readAsDataURL(file);
+});
+
+// Handle drag-and-drop events
+const uploadArea = document.getElementById('upload-area');
+
+uploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadArea.style.backgroundColor = "#ffb84d";
+});
+
+uploadArea.addEventListener('dragleave', () => {
+  uploadArea.style.backgroundColor = "#fff7e6";
+});
+
+uploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadArea.style.backgroundColor = "#fff7e6";
+  const file = e.dataTransfer.files[0];
   if (!file) return;
 
   const reader = new FileReader();
